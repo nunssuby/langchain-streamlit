@@ -6,3 +6,4 @@ tiktoken
 chromadb==0.5.0
 wikipedia
 pandas
+streamlit
