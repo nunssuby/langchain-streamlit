@@ -97,11 +97,6 @@ if prompt := st.chat_input():
     
     # qa = get_conversation_chain_memory(memory,k)
 
-    result = st.session_state["database"].similarity_search_with_score(prompt, k = k) #← 데이터베이스에서 유사도가 높은 문서를 가져옴
-    # sim1 = round(result[0][1], 5)
-    # sim2 = round(result[1][1], 5)
-    # sim3 = round(result[2][1], 5)
-
     
     result = st.session_state["qa"]({"question": prompt})
     msg = result["answer"]
