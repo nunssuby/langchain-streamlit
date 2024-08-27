@@ -23,11 +23,10 @@ from langchain.memory import ConversationBufferMemory
 # with st.sidebar:
 #     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
 #     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-openai_api_key = os.getenv("OPENAI_API_KEY")
 
-db_path = '../db3'
-embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
-database = Chroma(persist_directory= db_path, embedding_function = embeddings )  
+
+openai_api_key = os.getenv("OPENAI_API_KEY")
+k = 3
 
 # 💬 앱 제목과 🚀 설명
 st.title("💬 챗봇")
@@ -36,6 +35,19 @@ st.caption("🚀 OpenAI를 이용한 스트림릿 챗봇")
 # 초기 메시지 설정
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "무엇을 도와드릴까요?"}]
+    
+
+    db_path = '../db3'
+    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    st.session_state["database"] = Chroma(persist_directory= db_path, embedding_function = embeddings )
+    # database = Chroma(persist_directory= db_path, embedding_function = embeddings )  
+    
+    retriever =  st.session_state["database"].as_retriever(search_kwargs={"k": k})
+    chat = ChatOpenAI(model="gpt-3.5-turbo")
+    st.session_state["memory"] = ConversationBufferMemory(memory_key="chat_history", input_key="question",
+                                output_key="answer", return_messages=True)
+    st.session_state["qa"] = ConversationalRetrievalChain.from_llm(llm=chat, retriever=retriever, memory=st.session_state["memory"],    
+                                           return_source_documents=True,  output_key="answer")
 
 # 모든 대화 메시지를 화면에 표시
 for msg in st.session_state.messages:
@@ -43,7 +55,17 @@ for msg in st.session_state.messages:
 
   
 
-# 사용자 입력 및 응답 처리
+
+# 대화 메모리 생성
+# memory = ConversationBufferMemory(memory_key="chat_history", input_key="question",
+#                                 output_key="answer", return_messages=True)
+# qa = ConversationalRetrievalChain.from_llm(llm=chat, retriever=retriever, memory=memory,    
+#                                            return_source_documents=True,  output_key="answer")
+
+# count = 0
+# count  += 1
+# print("count", count)
+
 
 # 사용자 채팅 입력 확인
 if prompt := st.chat_input():
@@ -69,21 +91,24 @@ if prompt := st.chat_input():
     # 어시스턴트의 응답을 히스토리에 추가하고 화면에 표시
     # msg = response.choices[0].message["content"]
 
-    k = 3
-    retriever = database.as_retriever(search_kwargs={"k": k})
-    chat = ChatOpenAI(model="gpt-3.5-turbo")
-    # 대화 메모리 생성
-    memory = ConversationBufferMemory(memory_key="chat_history", input_key="question",
-                                  output_key="answer", return_messages=True)
+    
     # ConversationalRetrievalQA 체인 생성
-    qa = ConversationalRetrievalChain.from_llm(llm=chat, retriever=retriever, memory=memory,    
-                                           return_source_documents=True,  output_key="answer")
-    result = qa(prompt)
+    
+    
+    # qa = get_conversation_chain_memory(memory,k)
+
+    result = st.session_state["database"].similarity_search_with_score(prompt, k = k) #← 데이터베이스에서 유사도가 높은 문서를 가져옴
+    # sim1 = round(result[0][1], 5)
+    # sim2 = round(result[1][1], 5)
+    # sim3 = round(result[2][1], 5)
+
+    
+    result = st.session_state["qa"]({"question": prompt})
     msg = result["answer"]
+
     st.session_state.messages.append({"role": "assistant", "content": msg})
     st.chat_message("assistant").write(msg)
 
     # 현재 담겨 있는 메모리 내용 전체 확인
-    memory.load_memory_variables({})
-
-
+    history = st.session_state["memory"].load_memory_variables({})
+    print(history)
