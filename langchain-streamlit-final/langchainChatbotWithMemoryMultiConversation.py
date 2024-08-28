@@ -33,18 +33,22 @@ if "conversations" not in st.session_state:
     st.session_state["retriever"] = st.session_state["database"].as_retriever(search_kwargs={"k": k})
     st.session_state["chat_model"] = ChatOpenAI(model="gpt-3.5-turbo")
 
-# 사이드바에 대화 히스토리 및 새 대화 버튼 추가
-with st.sidebar:
-    st.header("대화 기록")
-    
-    # 새 대화 버튼 추가
-    if st.button("새 대화 시작"):
+# 상단 오른쪽에 새 대화 버튼을 배치
+col1, col2 = st.columns([3, 1])
+
+with col2:
+    # 우상단에 배치된 "새 대화 시작" 버튼
+    if st.button("새 대화 시작", key="new_conv", help="새로운 대화를 시작합니다"):
         st.session_state["current_conversation"] = []
         st.session_state["selected_conversation"] = len(st.session_state["conversations"])
         new_memory = ConversationBufferMemory(memory_key="chat_history", input_key="question",
                                               output_key="answer", return_messages=True)
         st.session_state["conversations"].append({"messages": [], "memory": new_memory})
 
+# 사이드바에 대화 히스토리 추가
+with st.sidebar:
+    st.header("대화 기록")
+    
     # 대화 기록 표시
     for i, conversation in enumerate(st.session_state["conversations"]):
         if conversation["messages"]:  # 대화에 메시지가 있는지 확인
