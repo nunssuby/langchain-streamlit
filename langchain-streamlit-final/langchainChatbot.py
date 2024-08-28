@@ -8,12 +8,15 @@
 import openai
 import streamlit as st
 import os
+import warnings
 
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage, Document
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA, ConversationalRetrievalChain
+
+warnings.filterwarnings("ignore")
 
 # sidebar에 OpenAI API 키 암호로 입력 받기
 # API 키 발급 사이트 공지하기- https://platform.openai.com/account/api-keys

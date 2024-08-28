@@ -8,6 +8,7 @@
 import openai
 import streamlit as st
 import os
+import warnings
 
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage, Document
@@ -16,6 +17,9 @@ from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA, ConversationalRetrievalChain
 
 from langchain.memory import ConversationBufferMemory
+
+# 경고 메시지 무시
+warnings.filterwarnings("ignore")
 
 
 # sidebar에 OpenAI API 키 암호로 입력 받기
