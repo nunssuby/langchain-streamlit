@@ -14,6 +14,10 @@ warnings.filterwarnings("ignore")
 
 # OpenAI API 키 설정
 openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    st.error("OpenAI API key를 찾을 수 없습니다. Secrets에 API key를 설정해주세요.")
+    st.stop()
+
 k = 3
 
 # 💬 앱 제목과 🚀 설명
@@ -27,16 +31,25 @@ if "conversations" not in st.session_state:
     st.session_state["selected_conversation"] = None
     
     db_path = '../aivle_db'
-    # embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    embeddings = None  # 초기화
+
+    # OpenAI Embeddings 초기화
     try:
         embeddings = OpenAIEmbeddings(
             model="text-embedding-ada-002", 
             openai_api_key=openai_api_key
         )
     except Exception as e:
-        print(f"An error occurred: {e}")
-    st.session_state["database"] = Chroma(persist_directory=db_path, embedding_function=embeddings)
-    
+        st.error(f"Embeddings 초기화 중 오류 발생: {e}")
+        st.stop()
+
+    # Chroma 데이터베이스 초기화
+    try:
+        st.session_state["database"] = Chroma(persist_directory=db_path, embedding_function=embeddings)
+    except Exception as e:
+        st.error(f"Chroma 데이터베이스 초기화 중 오류 발생: {e}")
+        st.stop()
+
     st.session_state["retriever"] = st.session_state["database"].as_retriever(search_kwargs={"k": k})
     st.session_state["chat_model"] = ChatOpenAI(model="gpt-3.5-turbo")
 
@@ -44,7 +57,6 @@ if "conversations" not in st.session_state:
 col1, col2 = st.columns([3, 1])
 
 with col2:
-    # 우상단에 배치된 "새 대화 시작" 버튼
     if st.button("새 대화 시작", key="new_conv", help="새로운 대화를 시작합니다"):
         st.session_state["current_conversation"] = []
         st.session_state["selected_conversation"] = len(st.session_state["conversations"])
@@ -56,9 +68,8 @@ with col2:
 with st.sidebar:
     st.header("대화 기록")
     
-    # 대화 기록 표시
     for i, conversation in enumerate(st.session_state["conversations"]):
-        if conversation["messages"]:  # 대화에 메시지가 있는지 확인
+        if conversation["messages"]:
             if st.button(conversation["messages"][0]["content"], key=f"conv_{i}"):
                 st.session_state["selected_conversation"] = i
                 st.session_state["current_conversation"] = conversation["messages"]
@@ -71,29 +82,23 @@ if st.session_state["current_conversation"]:
 # 사용자 채팅 입력 확인
 if prompt := st.chat_input("메시지를 입력하세요..."):
 
-    # API 키가 입력되지 않았을 경우, 메시지를 표시하고 프로그램을 중단
     if not openai_api_key:
         st.info("OpenAI API key를 입력해주세요.")
         st.stop()
 
-    # 대화가 선택되지 않은 경우 새 대화를 시작
     if st.session_state["selected_conversation"] is None:
         st.session_state["selected_conversation"] = len(st.session_state["conversations"])
         new_memory = ConversationBufferMemory(memory_key="chat_history", input_key="question",
                                               output_key="answer", return_messages=True)
         st.session_state["conversations"].append({"messages": [], "memory": new_memory})
 
-    # 사용자의 메시지를 현재 대화에 추가하고 화면에 표시
     st.session_state["current_conversation"].append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
-    # 대화 목록에 업데이트된 메시지를 반영
     st.session_state["conversations"][st.session_state["selected_conversation"]]["messages"] = st.session_state["current_conversation"]
 
-    # 선택된 대화의 메모리 불러오기
     current_memory = st.session_state["conversations"][st.session_state["selected_conversation"]]["memory"]
 
-    # ConversationalRetrievalQA 체인 사용하여 응답 생성
     qa_chain = ConversationalRetrievalChain.from_llm(
         llm=st.session_state["chat_model"], 
         retriever=st.session_state["retriever"], 
@@ -105,13 +110,10 @@ if prompt := st.chat_input("메시지를 입력하세요..."):
     result = qa_chain({"question": prompt})
     msg = result["answer"]
 
-    # 어시스턴트의 응답을 현재 대화에 추가하고 화면에 표시
     st.session_state["current_conversation"].append({"role": "assistant", "content": msg})
     st.chat_message("assistant").write(msg)
 
-    # 대화 목록에 업데이트된 메시지를 반영
     st.session_state["conversations"][st.session_state["selected_conversation"]]["messages"] = st.session_state["current_conversation"]
 
-    # 현재 담겨 있는 메모리 내용 전체 확인 (디버깅용)
     history = current_memory.load_memory_variables({})
     print(history)
