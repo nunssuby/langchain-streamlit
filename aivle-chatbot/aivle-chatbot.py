@@ -26,7 +26,7 @@ if "conversations" not in st.session_state:
     st.session_state["current_conversation"] = []
     st.session_state["selected_conversation"] = None
     
-    db_path = '../db3'
+    db_path = '../aivle_db'
     embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
     st.session_state["database"] = Chroma(persist_directory=db_path, embedding_function=embeddings)
     
