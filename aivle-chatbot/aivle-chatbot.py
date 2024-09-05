@@ -27,7 +27,14 @@ if "conversations" not in st.session_state:
     st.session_state["selected_conversation"] = None
     
     db_path = '../aivle_db'
-    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    # embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    try:
+        embeddings = OpenAIEmbeddings(
+            model="text-embedding-ada-002", 
+            openai_api_key=openai_api_key
+        )
+    except Exception as e:
+        print(f"An error occurred: {e}")
     st.session_state["database"] = Chroma(persist_directory=db_path, embedding_function=embeddings)
     
     st.session_state["retriever"] = st.session_state["database"].as_retriever(search_kwargs={"k": k})
