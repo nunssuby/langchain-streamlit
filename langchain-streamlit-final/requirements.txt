@@ -1,0 +1,9 @@
+openai==0.28
+langchain==0.1.20
+pymupdf
+spacy
+tiktoken
+chromadb==0.5.0
+wikipedia
+pandas
+streamlit

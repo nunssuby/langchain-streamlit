@@ -1,8 +1,3 @@
-# streamlit과 pyngrok openai 라이브러리를 설치
-# !pip install streamlit -q
-# !pip install pyngrok -q
-# !pip install openai==0.28.1 -q
-
 
 # openai, streamlit 라이브러리 불러오기
 import openai
@@ -22,13 +17,6 @@ from langchain.memory import ConversationBufferMemory
 warnings.filterwarnings("ignore")
 
 
-# sidebar에 OpenAI API 키 암호로 입력 받기
-# API 키 발급 사이트 공지하기- https://platform.openai.com/account/api-keys
-# with st.sidebar:
-#     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
-#     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-
-
 openai_api_key = os.getenv("OPENAI_API_KEY")
 k = 3
 
@@ -44,7 +32,6 @@ if "messages" not in st.session_state:
     db_path = '../db3'
     embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
     st.session_state["database"] = Chroma(persist_directory= db_path, embedding_function = embeddings )
-    # database = Chroma(persist_directory= db_path, embedding_function = embeddings )  
     
     retriever =  st.session_state["database"].as_retriever(search_kwargs={"k": k})
     chat = ChatOpenAI(model="gpt-3.5-turbo")
@@ -56,19 +43,6 @@ if "messages" not in st.session_state:
 # 모든 대화 메시지를 화면에 표시
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
-
-  
-
-
-# 대화 메모리 생성
-# memory = ConversationBufferMemory(memory_key="chat_history", input_key="question",
-#                                 output_key="answer", return_messages=True)
-# qa = ConversationalRetrievalChain.from_llm(llm=chat, retriever=retriever, memory=memory,    
-#                                            return_source_documents=True,  output_key="answer")
-
-# count = 0
-# count  += 1
-# print("count", count)
 
 
 # 사용자 채팅 입력 확인
@@ -85,21 +59,6 @@ if prompt := st.chat_input():
     # 사용자의 메시지를 히스토리에 추가하고 화면에 표시
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-
-    # # OpenAI API를 사용하여 응답 생성
-    # response = openai.ChatCompletion.create(
-    #     model="gpt-3.5-turbo",
-    #     messages=st.session_state.messages
-    # )
-
-    # 어시스턴트의 응답을 히스토리에 추가하고 화면에 표시
-    # msg = response.choices[0].message["content"]
-
-    
-    # ConversationalRetrievalQA 체인 생성
-    
-    
-    # qa = get_conversation_chain_memory(memory,k)
 
     
     result = st.session_state["qa"]({"question": prompt})
